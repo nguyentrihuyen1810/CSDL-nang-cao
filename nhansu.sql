@@ -222,3 +222,66 @@ INSERT INTO dependents(dependent_id,first_name,last_name,relationship,employee_i
 INSERT INTO dependents(dependent_id,first_name,last_name,relationship,employee_id) VALUES (28,'Woody','Russell','Child',145);
 INSERT INTO dependents(dependent_id,first_name,last_name,relationship,employee_id) VALUES (29,'Alec','Partners','Child',146);
 INSERT INTO dependents(dependent_id,first_name,last_name,relationship,employee_id) VALUES (30,'Sandra','Taylor','Child',176);
+
+CREATE VIEW View_demo AS 
+SELECT 
+	employee_id, first_name, last_name, hire_date, CONCAT(first_name ,' ' ,last_name) as full_name, min_salary, max_salary
+FROM
+	employees JOIN departments on departments.department_id = employees.department_id
+			 JOIN jobs on jobs.job_id = employees.job_id;
+
+SELECT * FROM View_demo	
+
+DELIMITER $$
+CREATE PROCEDURE procedure_demo ()
+	BEGIN 
+		SELECT 
+			employee_id, first_name, last_name, hire_date, CONCAT(first_name ,' ' ,last_name) as full_name, min_salary, max_salary
+		FROM
+			employees JOIN departments on departments.department_id = employees.department_id
+			          JOIN jobs on jobs.job_id = employees.job_id;
+	END $$ 
+    
+CALL procedure_demo();
+
+-- Tạo khung nhìn view_1: hiển thị thông tin nhân sự có lương trên 4000
+CREATE VIEW view_1 AS 
+SELECT * FROM employees WHERE salary > 4000
+
+SELECT * FROM view_1	
+
+-- Tạo khung nhìn view_2: hiển thị thông tin nhân sự (employees) có công việc (jobs) có min_salary >= 9000
+CREATE VIEW view_2 AS 
+	SELECT 
+		employee_id, first_name, last_name, email, phone_number, hire_date, employees.job_id, salary, manager_id, department_id
+	FROM employees
+		 JOIN jobs on jobs.job_id = employees.job_id
+         WHERE min_salary >= 9000 
+
+SELECT * FROM view_2
+
+-- Tạo thủ tục proc_1: dùng để bổ sung thêm bản ghi mới vào bảng departments với yêu cầu proc_1 phải thực hiện kiểm tra tính hợp lệ của dữ liệu được bổ sung, với nguyên 
+-- tắc là không được trùng khóa chính và đảm bảo toàn vẹn dữ liệu tham chiếu đến các bảng có liên quan.
+DELIMITER $$
+CREATE PROCEDURE proc_1 (add_department_id INT, add_department_name VARCHAR(30), add_location_id INT)
+BEGIN
+	IF add_department_id IN (SELECT department_id FROM departments) THEN SELECT 'add_department_id khong hop le' AS `error`;
+    ELSEIF add_location_id NOT IN (SELECT location_id FROM locations) THEN SELECT 'add_location_id khong hop le' AS `error`;
+	ELSE INSERT INTO departments VALUES (add_department_id, add_department_name, add_location_id);
+    END IF;
+END $$
+
+DROP PROCEDURE IF EXISTS proc_1
+
+CALL proc_1 (12, 'Tester', 1700);
+CALL proc_1 (13, 'Tester', 2000);
+
+-- Tạo thủ tục proc_2: dùng để cập nhập thông tin nhân sự (employees) với mã nhân sự được truyền vào như một tham số của Stored Procedure.
+DELIMITER $$
+CREATE PROCEDURE proc_2 (IN update_employee_id INT(11))
+BEGIN 
+	UPDATE employees set employees.salary = 10000
+    WHERE employees.employee_id = update_employee_id;
+END $$
+
+CALL proc_2(103);
